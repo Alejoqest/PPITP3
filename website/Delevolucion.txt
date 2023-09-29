@@ -1,0 +1,4 @@
+Cantidad de numeros ingresados: 7.
+Media = 52.833333333333.
+Mediana = 80.
+Moda= 23.
