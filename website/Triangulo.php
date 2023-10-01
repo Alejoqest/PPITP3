@@ -1,6 +1,5 @@
 <?php
 
-include 'Figura.php';
 class Triangulo implements Figura{
 
     protected array $lados;
@@ -10,7 +9,7 @@ class Triangulo implements Figura{
         $this->lados[2]= $lado3;     
     }
 
-    private function Semiperimetro(): float{
+    function Semiperimetro(): float{
         $Semiperimetro = null; 
         foreach ($this->lados as $lado) {
             $Semiperimetro += $lado;

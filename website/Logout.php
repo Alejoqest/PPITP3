@@ -13,19 +13,19 @@
     <a href="index.php">Index</a>
     <a href="Option.php">Opciones</a>
     <?php
-    if (!empty($_SESSION["username"])){
+    if (isset($_SESSION["username"])){
         echo "<fieldset>
-        Hola {$_SESSION["username"]}
+        Hola {$_SESSION["username"]}. ¿Como estas?
         </fieldset>";
     }
 
     ?>
-    <form action="Logout.php">
+    <form action="Logout.php" method="post">
         <fieldset>
             <legend>
                 Sesion
             </legend>
-            <label for="logout-btn">Salir de la session y eliminar datos de esta: </label>
+            <label for="logout-btn">Salir de la sesion y eliminar datos de esta: </label>
             <button type="submit" id="logout-btn" name="logout">Salir</button>
         </fieldset>
     </form>
@@ -34,7 +34,8 @@
 <?php
 
 if (isset($_POST["logout"])) {
-    session_abort();
+    session_destroy();
+    session_unset();
 }
 
 ?>

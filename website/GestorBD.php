@@ -1,4 +1,7 @@
 <?php
+
+use function PHPSTORM_META\sql_injection_subst;
+
     class GestorBD {
         private $conn;
         function __construct(String $db_server, String $db_username, String $db_password, String $db_name){
@@ -7,76 +10,48 @@
             }
             catch (mysqli_sql_exception)
             {
-                die("<br>Algunos de los elementos no son correctos: " . mysqli_connect_error());
+                die("Algunos de los elementos no son correctos: " . mysqli_connect_error().".<br>");
             }
             
-            echo "Connectado correctamente."; 
+            echo "Connectado correctamente. <br>"; 
         }
         function __destruct() {
             mysqli_close($this->conn);
         }
+        //Funcion de Escribir INSERT
         function Escribir(String $tabla, Array $valores) {
-            switch (count($valores)) {
-                case 1:
-                    $sql =  "INSERT INTO {$tabla}
-                    VALUES ({$valores[0]});";
-                    break;
-                case 2:
-                    $sql =  "INSERT INTO {$tabla}
-                    VALUES ({$valores[0]}, {$valores[1]});";
-                    break;
-                case 3:
-                    $sql =  "INSERT INTO {$tabla}
-                    VALUES ({$valores[0]}, {$valores[1]}, {$valores[2]});";
-                    break;
-                case 4:
-                    $sql =  "INSERT INTO {$tabla}
-                    VALUES ({$valores[0]}, {$valores[1]}, {$valores[2]}, {$valores[3]});";
-                    break;
-                case 5:
-                    $sql =  "INSERT INTO {$tabla}
-                    VALUES ({$valores[0]}, {$valores[1]}, {$valores[2]}, {$valores[3]}, {$valores[4]});";
-                    break;
-                case 6:
-                    $sql =  "INSERT INTO {$tabla}
-                    VALUES ({$valores[0]}, {$valores[1]}, {$valores[2]}, {$valores[3]}, {$valores[4]}, {$valores[5]});";
-                    break;
-                case 7:
-                    $sql =  "INSERT INTO {$tabla}
-                    VALUES ({$valores[0]}, {$valores[1]}, {$valores[2]}, {$valores[3]}, {$valores[4]}, {$valores[5]}, {$valores[6]});";
-                    break;
+            if (empty($valores)) {
+                die("No hay valores que se pueden ingresar.<br>");
+            } else {
+                $sql = "INSERT INTO {$tabla}
+                VALUES (";
+                for ($i = 0; $i < count($valores); $i++) {
+                    if ($i < count($valores)-1)
+                        $sql = $sql . "{$valores[$i]}, ";
+                    if ($i == count($valores)-1)
+                        $sql = $sql . "{$valores[$i]});";
+                }
             }
             try{
                 mysqli_query($this->conn, $sql);
-                echo ("<br> Los datos fueron ingresados correctamente a la tabla {$tabla}.");
+                echo ("Los datos fueron ingresados correctamente a la tabla {$tabla}.<br>");
             }
             catch (mysqli_sql_exception) {
-                die("<br> Algun dato no es correcto: " . mysqli_error($this->conn));
+                die("Algun dato no es correcto: #" . mysqli_errno($this->conn). " - " .mysqli_error($this->conn).".<br>");
             }
+            
         }
+        //Funcion de Leer SELECT
         function Leer(String $tabla, Array $criterio) {
             if (empty($criterio)) {
                 $sql = "SELECT * FROM {$tabla}";
-                $result = mysqli_query($this->conn, $sql);
-            }else {
-                switch (count($criterio)) {
-                    case 1:
-                        $sql = "SELECT * FROM {$tabla} WHERE ({$criterio[0]})";
-                        break;
-                    case 2:
-                        $sql = "SELECT * FROM {$tabla} WHERE ({$criterio[0]}  {$criterio[1]})";
-                    case 3:
-                        $sql = "SELECT * FROM {$tabla} WHERE ({$criterio[0]}  {$criterio[1]}  {$criterio[2]})";
-                        break;
-                    case 4:
-                        $sql = "SELECT * FROM {$tabla} WHERE ({$criterio[0]}  {$criterio[1]}  {$criterio[2]}  {$criterio[3]})";
-                        break;
-                    case 5:
-                        $sql = "SELECT * FROM {$tabla} WHERE ({$criterio[0]}  {$criterio[1]}  {$criterio[2]}  {$criterio[3]}  {$criterio[4]})";
-                        break;
-                    case 5:
-                        $sql = "SELECT * FROM {$tabla} WHERE ({$criterio[0]}  {$criterio[1]}  {$criterio[2]}  {$criterio[3]}  {$criterio[4]} {$criterio[5]})";
-                        break;
+            } else {
+                $sql = "SELECT * FROM {$tabla} WHERE (";
+                for ($i = 0; $i < count($criterio); $i++) {
+                    if ($i < count($criterio)-1)
+                        $sql = $sql . "{$criterio[$i]} ";
+                    if ($i == count($criterio)-1)
+                        $sql = $sql . "{$criterio[$i]});";
                 }
             }
             try {
@@ -84,114 +59,73 @@
                 if (mysqli_num_rows($result) > 0) {
                     while ($row = mysqli_fetch_assoc($result)) {
                         foreach($row as $key=>$valor) {
-                            echo "<br> {$key} = ". $valor. " |";
+                            echo " {$key} = ". $valor. " |<br>";
                         }
                     }
                 } else {
-                    echo "<br> 0 resultados.";
+                    echo "Segun los parametros, no hay ningun resultado.<br>";
                 }
             }
             catch (mysqli_sql_exception) {
-                die("<br> Algun dato no es correcto: " . mysqli_error($this->conn).".");
+                die("<br> Se encontro el siguiente error: #" . mysqli_errno($this->conn). " - " .mysqli_error($this->conn).".");
             }
+            
         }
-        //Funcion de borrar
+        //Funcion de borrar DELETE
         function Borrar(String $tabla, Array $criterio) {
-            if (empty($criterio)) {
+            if (empty($criterio)){
                 $sql = "DELETE FROM {$tabla}";
             } else {
-                switch (count($criterio)) {
-                    case 1:
-                        $sql = "DELETE FROM {$tabla} WHERE ({$criterio[0]});";
-                        break;
-                    case 2:
-                        $sql = "DELETE FROM {$tabla} WHERE ({$criterio[0]}  {$criterio[1]});";
-                        break;
-                    case 3:
-                        $sql = "DELETE FROM {$tabla} WHERE ({$criterio[0]}  {$criterio[1]}  {$criterio[2]});";
-                        break;
-                    case 4:
-                        $sql = "DELETE FROM {$tabla} WHERE ({$criterio[0]}  {$criterio[1]}  {$criterio[2]}  {$criterio[3]});";
-                        break;
-                    case 5:
-                        $sql = "DELETE FROM {$tabla} WHERE ({$criterio[0]}  {$criterio[1]}  {$criterio[2]}  {$criterio[3]}  {$criterio[4]});";
-                        break;
-                    case 6:
-                        $sql = "DELETE FROM {$tabla} WHERE ({$criterio[0]}  {$criterio[1]}  {$criterio[2]}  {$criterio[3]}  {$criterio[4]}  {$criterio[5]});";
-                        break;
+                $sql = "DELETE FROM {$tabla} WHERE (";
+                for ($i = 0; $i < count($criterio); $i++) {
+                    if ($i < count($criterio)-1)
+                        $sql = $sql . "{$criterio[$i]} ";
+                    if ($i == count($criterio)-1)
+                        $sql = $sql . "{$criterio[$i]});";
                 }
             }
             try{ 
                 mysqli_query($this->conn,$sql);
-                echo "<br> Se eliminaron los datos correctamente de la tabla {$tabla}.";
+                echo "Se eliminaron los datos correctamente de la tabla {$tabla}.<br>";
             }
             catch (mysqli_sql_exception) {
-                die ("<br> No se pudo hacer porque: ".mysqli_error($this->conn).".");
+                die ("No se pudo hacer por el siguiente error: #" . mysqli_errno($this->conn). " - " .mysqli_error($this->conn).".<br>");
             }
            
         }
         function Editar(String $tabla, Array $valores, Array $criterio) {
             if (empty($valores)) {
-                die ("No hay valores.");
+                die ("No hay valores para poder realizar la edicion. <br>");
             } else {
-                switch (count($valores)) {
-                    case 1:
-                        $sql= "UPDATE {$tabla}
-                        SET {$valores[0]}";
-                        break;
-                    case 2:
-                        $sql= "UPDATE {$tabla}
-                        SET {$valores[0]}, {$valores[1]}";
-                        break;
-                    case 3:
-                        $sql= "UPDATE {$tabla}
-                        SET {$valores[0]}, {$valores[1]},{$valores[2]}";
-                        break;
-                    case 4:
-                        $sql= "UPDATE {$tabla}
-                        SET {$valores[0]}, {$valores[1]}, {$valores[2]}, {$valores[3]}";
-                        break;
-                    case 5:
-                        $sql= "UPDATE {$tabla}
-                        SET {$valores[0]}, {$valores[1]}, {$valores[2]}, {$valores[3]}, {$valores[4]}";
-                        break;
-                    case 6:
-                        $sql= "UPDATE {$tabla}
-                        SET {$valores[0]}, {$valores[1]}, {$valores[2]}, {$valores[3]}, {$valores[4]}, {$valores[5]}";
-                        break;
-                    case 7:
-                        $sql= "UPDATE {$tabla}
-                        SET {$valores[0]}, {$valores[1]}, {$valores[2]}, {$valores[3]}, {$valores[4]}, {$valores[5]}, {$valores[6]}";
-                        break;
+                $sql = "UPDATE {$tabla}
+                SET ";
+                for ($i = 0; $i < count($valores); $i++) {
+                    if ($i < count($valores)-1)
+                        $sql = $sql . "{$valores[$i]}, ";
+                    if ($i == count($valores)-1)
+                        $sql = $sql . "{$valores[$i]}";
+                }
+                if (empty($criterio)) {
+                    $sql = $sql . ";";
+                } else {
+                    $sql = $sql . " WHERE (";
+                    for ($u = 0; $u < count($criterio); $u++) {
+                        if ($u < count($criterio)-1)
+                            $sql = $sql . "{$criterio[$u]} ";
+                        if ($u == count($criterio)-1) {
+                            $sql = $sql . "{$criterio[$u]});";
+                        }
                     }
-            }
-            switch (count($criterio)) {
-                case 1:
-                    $sql = $sql . " WHERE ({$criterio[0]});";
-                    break;
-                case 2:
-                    $sql = $sql . " WHERE ({$criterio[0]} {$criterio[1]});";
-                    break;
-                case 3:
-                    $sql = $sql . " WHERE ({$criterio[0]} {$criterio[1]} {$criterio[2]});";
-                    break;
-                case 4:
-                    $sql = $sql . " WHERE ({$criterio[0]} {$criterio[1]} {$criterio[2]} {$criterio[3]});";
-                    break;
-                case 5:
-                    $sql = $sql . " WHERE ({$criterio[0]} {$criterio[1]} {$criterio[2]} {$criterio[3]} {$criterio[4]});";
-                    break;
-                case 5:
-                    $sql = $sql . " WHERE ({$criterio[0]} {$criterio[1]} {$criterio[2]} {$criterio[3]} {$criterio[4]} {$criterio[5]});";
-                    break;
+                }
             }
             try {
                 mysqli_query($this->conn,$sql);
-                echo ("<br> Se realizaron los cambios en la tabla {$tabla}.");
+                echo ("Se realizaron los cambios en la tabla {$tabla}.<br>");
             }
             catch (mysqli_sql_exception){
-                die ("<br> No se pudo hacer debido: ". mysqli_error($this->conn).".");
+                die ("No se pudo hacer debido al siguiente error: #" . mysqli_errno($this->conn). " - " .mysqli_error($this->conn).".<br>");
             }
+            
         }
     }
 ?>

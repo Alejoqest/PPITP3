@@ -1,7 +1,5 @@
 <?php
 
-include 'Figura.php';
-
 class Circulo implements Figura {
     public const PI = 3.14159265;
 
