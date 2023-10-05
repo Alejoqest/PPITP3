@@ -1,19 +1,29 @@
 <?php
-
-use function PHPSTORM_META\sql_injection_subst;
-
     class GestorBD {
         private $conn;
         function __construct(String $db_server, String $db_username, String $db_password, String $db_name){
             try {
                 $this->conn = mysqli_connect($db_server, $db_username,$db_password,$db_name);
+                echo "<fieldset> <legend> Punto 6</legend> Se ha connectado correctamente a la base de datos ".$db_name.".</fieldset> <br>"; 
             }
             catch (mysqli_sql_exception)
             {
-                die("Algunos de los elementos no son correctos: " . mysqli_connect_error().".<br>");
+                echo("<fieldset> <legend> Punto 6</legend> Se ha encontrado el siguiente error: #" . mysqli_connect_errno()." ");
+                switch (mysqli_connect_errno()) {
+                    case 1045:
+                        die ("acceso denegado para el usuario '". $db_username ."'@'".$db_server."'(La contraseña ingresada
+                        fue '". $db_password ."' ).</fieldset> ");
+                        break;
+                    case 1049:
+                        die ("la base de datos '". $db_name . "' no existe o no fue encontrada. <br> </fieldset> ");
+                    break;
+                    case 2002:
+                        die("El host '". $db_server."' es desconocido. <br> Error especifico: ". mysqli_connect_error().". </fieldset> ");
+                    default:
+                        die ("No se puedo conectar a la base de datos. <br> Error especifico: ". mysqli_connect_error(). ".</fieldset>  <br>");
+                }
             }
             
-            echo "Connectado correctamente. <br>"; 
         }
         function __destruct() {
             mysqli_close($this->conn);
@@ -21,28 +31,29 @@ use function PHPSTORM_META\sql_injection_subst;
         //Funcion de Escribir INSERT
         function Escribir(String $tabla, Array $valores) {
             if (empty($valores)) {
-                die("No hay valores que se pueden ingresar.<br>");
+                die("INSERT = No hay valores que se pueden ingresar.<br>");
             } else {
                 $sql = "INSERT INTO {$tabla}
                 VALUES (";
                 for ($i = 0; $i < count($valores); $i++) {
-                    if ($i < count($valores)-1)
-                        $sql = $sql . "{$valores[$i]}, ";
-                    if ($i == count($valores)-1)
-                        $sql = $sql . "{$valores[$i]});";
+                    if (is_string($valores[$i]))
+                            $sql .= "'{$valores[$i]}'";
+                        else 
+                        $sql = $sql . "{$valores[$i]}";
+                    if ($i < count($valores)-1) $sql.= ", ";
+                    if ($i == count($valores)-1) $sql .= ");";
                 }
             }
             try{
-                mysqli_query($this->conn, $sql);
-                echo ("Los datos fueron ingresados correctamente a la tabla {$tabla}.<br>");
+                mysqli_query($this->conn,$sql);
+                echo ("<fieldset> <legend>Punto 7</legend>INSERT = Los datos fueron ingresados correctamente a la tabla {$tabla}.</fieldset><br>");
             }
             catch (mysqli_sql_exception) {
-                die("Algun dato no es correcto: #" . mysqli_errno($this->conn). " - " .mysqli_error($this->conn).".<br>");
+                die ($this->error_gestor(mysqli_errno($this->conn), mysqli_error($this->conn), "INSERT", $tabla, $sql));
             }
-            
         }
         //Funcion de Leer SELECT
-        function Leer(String $tabla, Array $criterio) {
+        function Leer(String $tabla, Array $criterio): array {
             if (empty($criterio)) {
                 $sql = "SELECT * FROM {$tabla}";
             } else {
@@ -56,20 +67,25 @@ use function PHPSTORM_META\sql_injection_subst;
             }
             try {
                 $result = mysqli_query($this->conn, $sql);
-                if (mysqli_num_rows($result) > 0) {
-                    while ($row = mysqli_fetch_assoc($result)) {
-                        foreach($row as $key=>$valor) {
-                            echo " {$key} = ". $valor. " |<br>";
-                        }
+                if (mysqli_num_rows($result) > 0)
+                    echo "<fieldset> <legend>Punto 8</legend> SELECT = Se obtuvo los datos correctamente para que sean leidos. </fieldset> <br>";
+                else
+                    echo "<fieldset> <legend>Punto 8</legend> SELECT = Segun los parametros, no hay ningun resultado.</fieldset> <br>";
+                $rows = mysqli_fetch_all($result, MYSQLI_ASSOC);
+                return $rows;
+                /*codigo para print
+                $select = $db->Leer($table, array());
+                foreach ($select as $row => $array) {
+                    echo "<hr > Fila Nº". $row + 1 ."<br>";
+                    foreach ($array as $key => $value) {
+                        echo ("{$key} = $value <br>");
                     }
-                } else {
-                    echo "Segun los parametros, no hay ningun resultado.<br>";
                 }
+                */
             }
             catch (mysqli_sql_exception) {
-                die("<br> Se encontro el siguiente error: #" . mysqli_errno($this->conn). " - " .mysqli_error($this->conn).".");
+                die ($this->error_gestor(mysqli_errno($this->conn), mysqli_error($this->conn), "SELECT", $tabla, $sql));
             }
-            
         }
         //Funcion de borrar DELETE
         function Borrar(String $tabla, Array $criterio) {
@@ -86,24 +102,32 @@ use function PHPSTORM_META\sql_injection_subst;
             }
             try{ 
                 mysqli_query($this->conn,$sql);
-                echo "Se eliminaron los datos correctamente de la tabla {$tabla}.<br>";
+                echo "<fieldset> <legend>Punto 9</legend>DELETE = Se eliminaron los datos correctamente de la tabla {$tabla}.</fieldset><br>";
             }
             catch (mysqli_sql_exception) {
-                die ("No se pudo hacer por el siguiente error: #" . mysqli_errno($this->conn). " - " .mysqli_error($this->conn).".<br>");
+                die ($this->error_gestor(mysqli_errno($this->conn), mysqli_error($this->conn), "DELETE", $tabla, $sql));
             }
-           
         }
         function Editar(String $tabla, Array $valores, Array $criterio) {
             if (empty($valores)) {
-                die ("No hay valores para poder realizar la edicion. <br>");
+                die ("<fieldset> <legend>Punto 10</legend> UPDATE = No hay valores para poder realizar la edicion.</fieldset> <br>");
             } else {
                 $sql = "UPDATE {$tabla}
                 SET ";
-                for ($i = 0; $i < count($valores); $i++) {
-                    if ($i < count($valores)-1)
-                        $sql = $sql . "{$valores[$i]}, ";
-                    if ($i == count($valores)-1)
-                        $sql = $sql . "{$valores[$i]}";
+                $iterador= 0;
+                foreach ($valores as $key=>$valor) {
+                    $iterador++; 
+                    $sql .= "{$key} = ";
+                    if (is_string($valor)) 
+                        $sql .= "'{$valor}'";
+                    else 
+                    $sql = $sql . "{$valor}";
+                    if ($iterador < count($valores)) {
+                        $sql .= ", ";
+                    }else if ($iterador == count($valores)) {
+                        $sql .= " ";
+                    }
+                    
                 }
                 if (empty($criterio)) {
                     $sql = $sql . ";";
@@ -120,12 +144,34 @@ use function PHPSTORM_META\sql_injection_subst;
             }
             try {
                 mysqli_query($this->conn,$sql);
-                echo ("Se realizaron los cambios en la tabla {$tabla}.<br>");
+                echo ("<fieldset> <legend>Punto 10</legend> UPDATE = Se realizaron los cambios en la tabla {$tabla}.</fieldset><br> ");
             }
             catch (mysqli_sql_exception){
-                die ("No se pudo hacer debido al siguiente error: #" . mysqli_errno($this->conn). " - " .mysqli_error($this->conn).".<br>");
-            }
-            
+                die ($this->error_gestor(mysqli_errno($this->conn), mysqli_error($this->conn), "UPDATE", $tabla , $sql));
+            }          
+        }
+        function error_gestor(int $error_num, String $error_message, String $type, String $tabla, String $sql):String {
+            $error_sql = "<fieldset> <legend>Operacion SQL</legend> <h1>ERROR</h1> <hr> consulta SQL: <br>". $sql."<hr> MySQL ha dicho: <br>"
+            .$type . " = Algun dato no es correcto: #". $error_num ;
+            switch ($error_num) {
+                case 1048:
+                    $error_sql .= " - algunos de los valores introducidos no debe ser NULL. <br>";
+                    break;
+                case 1062:
+                    $error_sql .= " - entrada duplicada de una llave. <br>";
+                    break; 
+                case 1064:
+                    $error_sql .= " - error de sintax de SQL. Revise el manual que corresponda al servidor de MariaDB actual. <br>";
+                    break;
+                case 1146:
+                    $error_sql .= " - la tabla '". $tabla. "' no existe. <br>";
+                    break;
+                case 4025:
+                    $error_sql .= " - se ignoro las diferentes constraints/restricciones. <br>";
+                    break;
+                }
+            $error_sql .= "El error especifico: " . $error_message . ".</fieldset> <br>";
+            return $error_sql;
         }
     }
 ?>
